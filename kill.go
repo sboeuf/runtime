@@ -21,6 +21,7 @@ import (
 	"syscall"
 
 	vc "github.com/kata-containers/runtime/virtcontainers"
+	"github.com/kata-containers/runtime/virtcontainers/pkg/oci"
 	"github.com/urfave/cli"
 )
 
@@ -124,7 +125,20 @@ func kill(containerID, signal string, all bool) error {
 		return nil
 	}
 
-	_, err = vci.StopContainer(podID, containerID)
+	containerType, err := oci.GetContainerType(status.Annotations)
+	if err != nil {
+		return err
+	}
+
+	switch containerType {
+	case vc.PodSandbox:
+		_, err = vci.StopPod(podID)
+	case vc.PodContainer:
+		_, err = vci.StopContainer(podID, containerID)
+	default:
+		return fmt.Errorf("Invalid container type found")
+	}
+
 	return err
 }
 
