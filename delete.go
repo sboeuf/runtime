@@ -114,8 +114,15 @@ func delete(containerID string, force bool) error {
 }
 
 func deletePod(podID string) error {
-	if _, err := vci.StopPod(podID); err != nil {
+	status, err := vci.StatusPod(podID)
+	if err != nil {
 		return err
+	}
+
+	if oci.StateToOCIState(status.State) != oci.StateStopped {
+		if _, err := vci.StopPod(podID); err != nil {
+			return err
+		}
 	}
 
 	if _, err := vci.DeletePod(podID); err != nil {
